@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+const (
+	DefaultSessionCookieName = "SESSION_ID"
+)
+
 func WriteSessionCookie(w http.ResponseWriter, sKey string, value string, duration string) error {
 	var h int
 	h, err := strconv.Atoi(duration)
@@ -16,7 +20,7 @@ func WriteSessionCookie(w http.ResponseWriter, sKey string, value string, durati
 	}
 
 	cookie := http.Cookie{
-		Name:   "SESSION_ID",
+		Name:   DefaultSessionCookieName,
 		Value:  value,
 		Path:   "/", // string
 		Domain: "",  // string
@@ -57,5 +61,5 @@ func ReadSessionCookie(r *http.Request, sKey string) (string, error) {
 		return "", errors.New(ErrInvSecretKey)
 	}
 
-	return ReadSigned(r, "SESSION_ID", secretKey)
+	return ReadSigned(r, DefaultSessionCookieName, secretKey)
 }

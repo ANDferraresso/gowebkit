@@ -28,7 +28,7 @@ func TestAsyncLoggerWritesToAllLevels(t *testing.T) {
 
 	logger, err := NewLogger(DEBUG, tmpDir)
 	if err != nil {
-		t.Fatalf("Errore creazione logger: %v", err)
+		t.Fatalf("Error while creating logger: %v", err)
 	}
 	defer logger.Close()
 
@@ -62,11 +62,11 @@ func TestAsyncLoggerWritesToAllLevels(t *testing.T) {
 		logFile := GetLogFileName(tmpDir, tt.fileType)
 		entry, err := readLastLogLine(logFile)
 		if err != nil {
-			t.Errorf("Errore lettura %s: %v", tt.fileType, err)
+			t.Errorf("Errore while reading %s: %v", tt.fileType, err)
 			continue
 		}
 		if entry["message"] != tt.message {
-			t.Errorf("Messaggio log %s errato: %v", tt.fileType, entry["message"])
+			t.Errorf("Log message %s wrong: %v", tt.fileType, entry["message"])
 		}
 	}
 }
@@ -76,12 +76,12 @@ func TestLoggerWithFullChannel(t *testing.T) {
 
 	logger, err := NewLogger(INFO, tmpDir)
 	if err != nil {
-		t.Fatalf("Errore creazione logger: %v", err)
+		t.Fatalf("Error while creating logger: %v", err)
 	}
 	//defer logger.Close()
 
 	for i := 0; i < 2000; i++ { // supera la capacità del canale
-		logger.Info("Messaggio", Field("i", i))
+		logger.Info("Message", Field("i", i))
 	}
 	logger.Close()
 	// Se il test arriva qui senza blocchi o panico, il logger è robusto
