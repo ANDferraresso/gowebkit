@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+var (
+	updTableNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+)
+
 type UpdateQBuilder struct {
 	db     *sql.DB
 	debug  string
@@ -16,6 +20,7 @@ type UpdateQBuilder struct {
 	where  string
 	binds  []interface{}
 	err    bool
+	errStr string
 }
 
 // Crea e ritorna un nuovo UpdateQBuilder
@@ -29,18 +34,18 @@ func UpdateQuery(db *sql.DB, debug string) *UpdateQBuilder {
 		where:  "",
 		binds:  []interface{}{},
 		err:    false,
+		errStr: "",
 	}
 }
 
 // UPDATE
 func (q *UpdateQBuilder) Update(input string) *UpdateQBuilder {
-	s1 := `^[a-zA-Z_][a-zA-Z0-9_]*$`
-	re := regexp.MustCompile(s1)
-	if re.Match([]byte(input)) {
+	if updTableNameRegex.Match([]byte(input)) {
 		q.update = fmt.Sprintf("`%s`", input)
 	} else {
 		// Errore.
 		q.err = true
+		q.errStr = ""
 		q.update = ""
 	}
 	return q
@@ -48,8 +53,8 @@ func (q *UpdateQBuilder) Update(input string) *UpdateQBuilder {
 
 // SET
 func (q *UpdateQBuilder) Set(inputs ...interface{}) *UpdateQBuilder {
+	re := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]* = \?$`)
 	if len(inputs) > 0 {
-		s1 := `^[a-zA-Z_][a-zA-Z0-9_]* = \?$`
 		i := 0
 		k := 0
 		for {
@@ -57,11 +62,11 @@ func (q *UpdateQBuilder) Set(inputs ...interface{}) *UpdateQBuilder {
 				input, ok := inputs[i].(string)
 				if !ok {
 					q.err = true
+					q.errStr = ""
 					q.where = ""
 					q.binds = []interface{}{}
 					break
 				}
-				re := regexp.MustCompile(s1)
 				if re.Match([]byte(input)) {
 					c := strings.Split(input, " ")
 					// c[0] Nome colonna. c[1] =. c[2] ?.
@@ -71,6 +76,7 @@ func (q *UpdateQBuilder) Set(inputs ...interface{}) *UpdateQBuilder {
 				} else {
 					// Errore.
 					q.err = true
+					q.errStr = ""
 					q.set = ""
 					q.binds = []interface{}{}
 					break
@@ -85,6 +91,7 @@ func (q *UpdateQBuilder) Set(inputs ...interface{}) *UpdateQBuilder {
 				if k == 2 {
 					// Errore.
 					q.err = true
+					q.errStr = ""
 					q.set = ""
 					q.binds = []interface{}{}
 				}
@@ -118,10 +125,17 @@ func (q *UpdateQBuilder) Where(inputs ...interface{}) *UpdateQBuilder {
 		rxCond1a := `^[a-zA-Z_][a-zA-Z0-9_]* (<|=|>|<>|<=|>=|LIKE) \?$`
 		rxCond2a := `^[a-zA-Z_][a-zA-Z0-9_]* (IS NULL|IS NOT NULL)$`
 		rxCond3a := `^[a-zA-Z_][a-zA-Z0-9_]* (<|=|>|<>|<=|>=) [a-zA-Z_][a-zA-Z0-9_]*$`
+		comp_rxCond1a := regexp.MustCompile(rxCond1a)
+		comp_rxCond2a := regexp.MustCompile(rxCond2a)
+		comp_rxCond3a := regexp.MustCompile(rxCond3a)
 		//
 		rxOp := `^(AND|OR|NOT|OR NOT|AND NOT)$`
 		rxBrOp := `^\(+?$`
 		rxBrCl := `^\)+?$`
+		comp_rxOp := regexp.MustCompile(rxOp)
+		comp_rxBrOp := regexp.MustCompile(rxBrOp)
+		comp_rxBrCl := regexp.MustCompile(rxBrCl)
+		//
 		i := 0
 		k := 0
 		for {
@@ -129,32 +143,30 @@ func (q *UpdateQBuilder) Where(inputs ...interface{}) *UpdateQBuilder {
 				br, ok := inputs[i].(string)
 				if !ok {
 					q.err = true
+					q.errStr = ""
 					q.where = ""
 					q.binds = []interface{}{}
 					break
 				}
-				re := regexp.MustCompile(rxBrOp)
-				if re.Match([]byte(br)) {
+				if comp_rxBrOp.Match([]byte(br)) {
 					q.where = q.where + br
 					i += 1
 				} else {
 					cond, ok := inputs[i].(string)
 					if !ok {
 						q.err = true
+						q.errStr = ""
 						q.where = ""
 						q.binds = []interface{}{}
 						break
 					}
-					re1a := regexp.MustCompile(rxCond1a)
-					re2a := regexp.MustCompile(rxCond2a)
-					re3a := regexp.MustCompile(rxCond3a)
-					if re1a.Match([]byte(cond)) {
+					if comp_rxCond1a.Match([]byte(cond)) {
 						c := strings.Split(cond, " ")
 						// c[0] Nome colonna. c[1] Comparatore. c[2] ?, ma non serve.
 						q.where = q.where + fmt.Sprintf("`%s` %s", c[0], c[1])
 						i += 1
 						k = 1
-					} else if re2a.Match([]byte(cond)) {
+					} else if comp_rxCond2a.Match([]byte(cond)) {
 						c := [2]string{}
 						x := strings.Index(cond, " ") // Trova lo spazio
 						c[0] = cond[:x]
@@ -162,7 +174,7 @@ func (q *UpdateQBuilder) Where(inputs ...interface{}) *UpdateQBuilder {
 						q.where = q.where + fmt.Sprintf("`%s` %s", c[0], c[1])
 						i += 1
 						k = 2 // Non c'è valore dopo.
-					} else if re3a.Match([]byte(cond)) {
+					} else if comp_rxCond3a.Match([]byte(cond)) {
 						c := strings.Split(cond, " ")
 						// c[0] Nome colonna. c[1] Comparatore. c[2] Nome colonna.
 						q.where = q.where + fmt.Sprintf("`%s` %s `%s`", c[0], c[1], c[2])
@@ -171,6 +183,7 @@ func (q *UpdateQBuilder) Where(inputs ...interface{}) *UpdateQBuilder {
 					} else {
 						// Errore.
 						q.err = true
+						q.errStr = ""
 						q.where = ""
 						q.binds = []interface{}{}
 						break
@@ -186,24 +199,24 @@ func (q *UpdateQBuilder) Where(inputs ...interface{}) *UpdateQBuilder {
 				br, ok := inputs[i].(string)
 				if !ok {
 					q.err = true
+					q.errStr = ""
 					q.where = ""
 					q.binds = []interface{}{}
 					break
 				}
-				re := regexp.MustCompile(rxBrCl)
-				if re.Match([]byte(br)) {
+				if comp_rxBrCl.Match([]byte(br)) {
 					q.where = q.where + br
 					i += 1
 				} else {
 					op, ok := inputs[i].(string)
 					if !ok {
 						q.err = true
+						q.errStr = ""
 						q.where = ""
 						q.binds = []interface{}{}
 						break
 					}
-					re := regexp.MustCompile(rxOp)
-					if re.Match([]byte(op)) {
+					if comp_rxOp.Match([]byte(op)) {
 						q.where = q.where + fmt.Sprintf(" %s ", op)
 						i += 1
 						k = 0
@@ -221,6 +234,7 @@ func (q *UpdateQBuilder) Where(inputs ...interface{}) *UpdateQBuilder {
 				if k == 1 {
 					// Errore.
 					q.err = true
+					q.errStr = ""
 					q.where = ""
 					q.binds = []interface{}{}
 				}
@@ -235,7 +249,7 @@ func (q *UpdateQBuilder) Where(inputs ...interface{}) *UpdateQBuilder {
 // Build costruisce la query finale e la esegue.
 func (q *UpdateQBuilder) Build() Res {
 	if q.err {
-		return Res{Err: true, Msg: "Error while building the query.", Data: []map[string]interface{}{}}
+		return Res{Err: true, Msg: "Error while building the query: " + q.errStr + ".", Data: []map[string]interface{}{}}
 	}
 	var s strings.Builder
 	if q.update != "" {

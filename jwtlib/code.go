@@ -7,12 +7,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateJWT(secretKey string, userID string) (string, error) {
+func GenerateJWT(secretKey string, hours int64, issuer string, userID string) (string, error) {
 	// Create a new token object, specifying signing method and the claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"iss": "NewDida",
+		"iss": issuer,
 		"sub": userID,
-		"exp": time.Now().Add(time.Hour * 24).Unix(),
+		"exp": time.Now().Add(time.Duration(hours) * time.Hour).Unix(),
 	})
 
 	// Sign and get the complete encoded token as a string using the secret

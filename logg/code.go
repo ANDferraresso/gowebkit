@@ -24,7 +24,7 @@ func FormatValue(value interface{}) interface{} {
 	}
 }
 
-// getCaller restituisce il nome del file e la linea chiamante
+// GetCaller return filename + code line number of the caller.
 func GetCaller() (string, int) {
 	_, file, line, ok := runtime.Caller(2)
 	if !ok {

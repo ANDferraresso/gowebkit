@@ -1,3 +1,4 @@
+// Package logg provides helper functions logging.
 package logg
 
 import (
@@ -14,6 +15,7 @@ const (
 	ERROR
 )
 
+// Logger represents a log object.
 type Logger struct {
 	level      int
 	debugLog   *log.Logger
@@ -29,12 +31,14 @@ type Logger struct {
 	closeOnce  sync.Once
 }
 
+// LogEntry represents a log row.
 type logEntry struct {
 	level   int
 	message string
 	fields  []LogField
 }
 
+// LogField represents a key-value pair in a log row.
 type LogField struct {
 	Key   string
 	Value interface{}

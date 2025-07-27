@@ -102,7 +102,7 @@ func (form *Form) ValidateAllMap(param map[string]interface{}) (bool, map[string
 
 	for _, k := range form.FieldsOrder {
 		if k == "_csrf" {
-
+			continue
 		} else {
 			_, ok := param[form.Prefix+k]
 			if !ok {

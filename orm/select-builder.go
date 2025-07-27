@@ -21,7 +21,12 @@ type SelectQBuilder struct {
 	offset      int64
 	binds       []interface{}
 	err         bool
+	errStr      string
 }
+
+var (
+	selTableNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+)
 
 // Crea e ritorna un nuovo SelectQBuilder
 func SelectQuery(db *sql.DB, debug string) *SelectQBuilder {
@@ -38,6 +43,7 @@ func SelectQuery(db *sql.DB, debug string) *SelectQBuilder {
 		offset:      -1,
 		binds:       []interface{}{},
 		err:         false,
+		errStr:      "",
 	}
 }
 
@@ -49,29 +55,28 @@ func (q *SelectQBuilder) Count() *SelectQBuilder {
 
 // SELECT
 func (q *SelectQBuilder) Select(fields ...string) *SelectQBuilder {
-	s1a := `^[a-zA-Z_][a-zA-Z0-9_]*$`                                                   // Es. ID
 	s1b := `^[a-zA-Z_][a-zA-Z0-9_]* AS [a-zA-Z_][a-zA-Z0-9_]*$`                         // Es. ID AS id
 	s2a := `^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$`                           // Es. c.ID
 	s2b := `^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]* AS [a-zA-Z_][a-zA-Z0-9_]*$` // Es. c.ID AS id
+	comp_s1b := regexp.MustCompile(s1b)
+	comp_s2a := regexp.MustCompile(s2a)
+	comp_s2b := regexp.MustCompile(s2b)
+	//
 	for _, f := range fields {
-		re1a := regexp.MustCompile(s1a)
-		re1b := regexp.MustCompile(s1b)
-		re2a := regexp.MustCompile(s2a)
-		re2b := regexp.MustCompile(s2b)
-		if re1a.Match([]byte(f)) {
+		if selTableNameRegex.Match([]byte(f)) {
 			q.fields = append(q.fields, fmt.Sprintf("`%s`", f))
 			q.columnNames = append(q.columnNames, f)
-		} else if re1b.Match([]byte(f)) {
+		} else if comp_s1b.Match([]byte(f)) {
 			c := strings.Split(f, " ")
 			// c[0] Colonna. c[1] AS. c[2] Alias.
 			q.fields = append(q.fields, fmt.Sprintf("`%s` AS `%s`", c[0], c[2]))
 			q.columnNames = append(q.columnNames, c[2])
-		} else if re2a.Match([]byte(f)) {
+		} else if comp_s2a.Match([]byte(f)) {
 			c := strings.Split(f, ".")
 			// c[0] Tabella. c[1] Colonna.
 			q.fields = append(q.fields, fmt.Sprintf("`%s`.`%s`", c[0], c[1]))
 			q.columnNames = append(q.columnNames, c[1])
-		} else if re2b.Match([]byte(f)) {
+		} else if comp_s2b.Match([]byte(f)) {
 			c := strings.Split(f, " ")
 			// c[0] Tabella.Nome Colonna. c[1] AS. c[2] Alias.
 			c_ := strings.Split(c[0], ".")
@@ -81,6 +86,7 @@ func (q *SelectQBuilder) Select(fields ...string) *SelectQBuilder {
 		} else {
 			// Errore.
 			q.err = true
+			q.errStr = ""
 			q.fields = []string{}
 			break
 		}
@@ -91,21 +97,20 @@ func (q *SelectQBuilder) Select(fields ...string) *SelectQBuilder {
 
 // FROM
 func (q *SelectQBuilder) From(inputs ...string) *SelectQBuilder {
-	s1 := `^[a-zA-Z_][a-zA-Z0-9_]*$`
 	s2 := `^[a-zA-Z_][a-zA-Z0-9_]* AS [a-zA-Z_][a-zA-Z0-9_]*$`
+	comp_s2 := regexp.MustCompile(s2)
 	for _, input := range inputs {
-		re := regexp.MustCompile(s1)
-		if re.Match([]byte(input)) {
+		if selTableNameRegex.Match([]byte(input)) {
 			q.from = append(q.from, fmt.Sprintf("`%s`", input))
 		} else {
-			re := regexp.MustCompile(s2)
-			if re.Match([]byte(input)) {
+			if comp_s2.Match([]byte(input)) {
 				c := strings.Split(input, " ")
 				// c[0] Nome tabella. c[1] AS. c[2] alias.
 				q.from = append(q.from, fmt.Sprintf("`%s` AS `%s`", c[0], c[2]))
 			} else {
 				// Errore.
 				q.err = true
+				q.errStr = ""
 				q.from = []string{}
 				break
 			}
@@ -123,6 +128,12 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 		rxCond2b := `^[a-zA-Z_][a-zA-Z0-9_]*.[a-zA-Z_][a-zA-Z0-9_]* (IS NULL|IS NOT NULL)$`
 		rxCond3a := `^[a-zA-Z_][a-zA-Z0-9_]* (<|=|>|<>|<=|>=) [a-zA-Z_][a-zA-Z0-9_]*$`
 		rxCond3b := `^[a-zA-Z_][a-zA-Z0-9_]*.[a-zA-Z_][a-zA-Z0-9_]* (<|=|>|<>|<=|>=) [a-zA-Z_][a-zA-Z0-9_]*.[a-zA-Z_][a-zA-Z0-9_]*$`
+		comp_rxCond1a := regexp.MustCompile(rxCond1a)
+		comp_rxCond1b := regexp.MustCompile(rxCond1b)
+		comp_rxCond2a := regexp.MustCompile(rxCond2a)
+		comp_rxCond2b := regexp.MustCompile(rxCond2b)
+		comp_rxCond3a := regexp.MustCompile(rxCond3a)
+		comp_rxCond3b := regexp.MustCompile(rxCond3b)
 		//
 		rxOp := `^(AND|OR|NOT|OR NOT|AND NOT)$`
 		rxBrOp := `^\(+?$`
@@ -134,6 +145,7 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 				br, ok := inputs[i].(string)
 				if !ok {
 					q.err = true
+					q.errStr = ""
 					q.where = ""
 					q.binds = []interface{}{}
 					break
@@ -146,30 +158,25 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 					cond, ok := inputs[i].(string)
 					if !ok {
 						q.err = true
+						q.errStr = ""
 						q.where = ""
 						q.binds = []interface{}{}
 						break
 					}
-					re1a := regexp.MustCompile(rxCond1a)
-					re1b := regexp.MustCompile(rxCond1b)
-					re2a := regexp.MustCompile(rxCond2a)
-					re2b := regexp.MustCompile(rxCond2b)
-					re3a := regexp.MustCompile(rxCond3a)
-					re3b := regexp.MustCompile(rxCond3b)
-					if re1a.Match([]byte(cond)) {
+					if comp_rxCond1a.Match([]byte(cond)) {
 						c := strings.Split(cond, " ")
 						// c[0] Nome colonna. c[1] Comparatore. c[2] ?, ma non serve.
 						q.where = q.where + fmt.Sprintf("`%s` %s", c[0], c[1])
 						i += 1
 						k = 1
-					} else if re1b.Match([]byte(cond)) {
+					} else if comp_rxCond1b.Match([]byte(cond)) {
 						c := strings.Split(cond, " ")
 						// c[0] Nome colonna. c[1] Comparatore. c[2] ?, ma non serve.
 						c_ := strings.Split(c[0], ".") // c_[0] Alias. c[1] Nome colonna.
 						q.where = q.where + fmt.Sprintf("`%s`.`%s` %s", c_[0], c_[1], c[1])
 						i += 1
 						k = 1
-					} else if re2a.Match([]byte(cond)) {
+					} else if comp_rxCond2a.Match([]byte(cond)) {
 						c := [2]string{}
 						x := strings.Index(cond, " ") // Trova lo spazio
 						c[0] = cond[:x]
@@ -177,7 +184,7 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 						q.where = q.where + fmt.Sprintf("`%s` %s", c[0], c[1])
 						i += 1
 						k = 2 // Non c'è valore dopo.
-					} else if re2b.Match([]byte(cond)) {
+					} else if comp_rxCond2b.Match([]byte(cond)) {
 						c := [2]string{}
 						x := strings.Index(cond, " ") // Trova lo spazio
 						c[0] = cond[:x]
@@ -186,13 +193,13 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 						q.where = q.where + fmt.Sprintf("`%s`.`%s` %s", c_[0], c_[1], c[1])
 						i += 1
 						k = 2 // Non c'è valore dopo.
-					} else if re3a.Match([]byte(cond)) {
+					} else if comp_rxCond3a.Match([]byte(cond)) {
 						c := strings.Split(cond, " ")
 						// c[0] Nome colonna. c[1] Comparatore. c[2] Nome colonna.
 						q.where = q.where + fmt.Sprintf("`%s` %s `%s`", c[0], c[1], c[2])
 						i += 1
 						k = 2 // Non c'è valore dopo.
-					} else if re3b.Match([]byte(cond)) {
+					} else if comp_rxCond3b.Match([]byte(cond)) {
 						c := strings.Split(cond, " ")
 						// c[0] Nome colonna. c[1] Comparatore. c[2] Nome colonna.
 						c0 := strings.Split(c[0], ".")
@@ -203,6 +210,7 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 					} else {
 						// Errore.
 						q.err = true
+						q.errStr = ""
 						q.where = ""
 						q.binds = []interface{}{}
 						break
@@ -218,6 +226,7 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 				br, ok := inputs[i].(string)
 				if !ok {
 					q.err = true
+					q.errStr = ""
 					q.where = ""
 					q.binds = []interface{}{}
 					break
@@ -230,6 +239,7 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 					op, ok := inputs[i].(string)
 					if !ok {
 						q.err = true
+						q.errStr = ""
 						q.where = ""
 						q.binds = []interface{}{}
 						break
@@ -242,6 +252,7 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 					} else {
 						// Errore.
 						q.err = true
+						q.errStr = ""
 						q.where = ""
 						q.binds = []interface{}{}
 						break
@@ -253,6 +264,7 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 				if k == 1 {
 					// Errore.
 					q.err = true
+					q.errStr = ""
 					q.where = ""
 					q.binds = []interface{}{}
 				}
@@ -285,7 +297,7 @@ func (q *SelectQBuilder) Offset(offset int64) *SelectQBuilder {
 // Build costruisce la query finale e la esegue.
 func (q *SelectQBuilder) Build() Res {
 	if q.err {
-		return Res{Err: true, Msg: "Error while building the query.", Data: []map[string]interface{}{}}
+		return Res{Err: true, Msg: "Error while building the query: " + q.errStr + ".", Data: []map[string]interface{}{}}
 	}
 	var s strings.Builder
 	if q.count {

@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+var (
+	insTableNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+)
+
 type InsertQBuilder struct {
 	db        *sql.DB
 	debug     string
@@ -15,6 +19,7 @@ type InsertQBuilder struct {
 	valuesStr string
 	binds     []interface{}
 	err       bool
+	errStr    string
 }
 
 // Crea e ritorna un nuovo InsertQBuilder
@@ -27,18 +32,18 @@ func InsertQuery(db *sql.DB, debug string) *InsertQBuilder {
 		valuesStr: "",
 		binds:     []interface{}{},
 		err:       false,
+		errStr:    "",
 	}
 }
 
 // INSERT
 func (q *InsertQBuilder) Insert(input string) *InsertQBuilder {
-	s1 := `^[a-zA-Z_][a-zA-Z0-9_]*$`
-	re := regexp.MustCompile(s1)
-	if re.Match([]byte(input)) {
+	if insTableNameRegex.Match([]byte(input)) {
 		q.insert = fmt.Sprintf("`%s`", input)
 	} else {
 		// Errore.
 		q.err = true
+		q.errStr = "table name regexp error"
 		q.insert = ""
 	}
 	return q
@@ -46,14 +51,13 @@ func (q *InsertQBuilder) Insert(input string) *InsertQBuilder {
 
 // COLUMNS
 func (q *InsertQBuilder) Columns(inputs ...string) *InsertQBuilder {
-	s1 := `^[a-zA-Z_][a-zA-Z0-9_]*$`
 	for _, input := range inputs {
-		re := regexp.MustCompile(s1)
-		if re.Match([]byte(input)) {
+		if insTableNameRegex.Match([]byte(input)) {
 			q.columns = append(q.columns, input)
 		} else {
 			// Errore.
 			q.err = true
+			q.errStr = "table name regexp error"
 			q.columns = []string{}
 			break
 		}
@@ -77,7 +81,7 @@ func (q *InsertQBuilder) Values(inputs ...interface{}) *InsertQBuilder {
 // Build costruisce la query finale e la esegue.
 func (q *InsertQBuilder) Build() Res {
 	if q.err {
-		return Res{Err: true, Msg: "Error while building the query.", Data: []map[string]interface{}{}}
+		return Res{Err: true, Msg: "Error while building the query: " + q.errStr + ".", Data: []map[string]interface{}{}}
 	}
 	var s strings.Builder
 	if q.insert != "" {

@@ -25,6 +25,7 @@ func (form *Form) AddField(fd *Field) {
 		Widget:     "",
 		WsUrl:      "",
 		WsCallback: "",
+		Opts:       make([]map[string]string, 0),
 	}
 }
 
@@ -43,6 +44,7 @@ func (form *Form) AddCsrfField(value string) {
 		Widget:     "input-hidden",
 		WsUrl:      "",
 		WsCallback: "",
+		Opts:       make([]map[string]string, 0),
 	}
 
 	//form.UIs["_csrf"] = &UI{Attrs: map[string]string{"value": value}}
