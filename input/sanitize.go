@@ -1,4 +1,4 @@
-package sanitize
+package input
 
 import "strings"
 
