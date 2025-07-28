@@ -30,12 +30,12 @@ type UI struct {
 }
 
 type Form struct {
-	Name         string            `json:"name"`
-	Prefix       string            `json:"prefix"`
-	Required     []string          `json:"required"`
-	DontValidate []string          `json:"dont_validate"`
-	FieldsOrder  []string          `json:"fields_order"`
-	Fields       map[string]*Field `json:"fields"`
-	UIs          map[string]*UI    `json:"uis"`
-	Validator    validator.Validator
+	Name         string              `json:"name"`
+	Prefix       string              `json:"prefix"`
+	Required     []string            `json:"required"`
+	DontValidate []string            `json:"dont_validate"`
+	FieldsOrder  []string            `json:"fields_order"`
+	Fields       map[string]*Field   `json:"fields"`
+	UIs          map[string]*UI      `json:"uis"`
+	Validator    validator.Validator `json:"-"`
 }
