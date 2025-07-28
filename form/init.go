@@ -1,6 +1,7 @@
 package form
 
 import (
+	"github.com/ANDferraresso/gowebkit/orm"
 	"github.com/ANDferraresso/gowebkit/validator"
 )
 
@@ -12,12 +13,13 @@ type FieldImg struct {
 }
 
 type Field struct {
-	Name      string            `json:"name"`
-	Title     string            `json:"title"`
-	Img       FieldImg          `json:"field_img"`
-	MinLength string            `json:"min_length"`
-	MaxLength string            `json:"max_length"`
-	Checks    []validator.Check `json:"-"` // `json:"checks"`
+	Name      string   `json:"name"`
+	Title     string   `json:"title"`
+	Img       FieldImg `json:"field_img"`
+	MinLength string   `json:"min_length"`
+	MaxLength string   `json:"max_length"`
+	// Checks []validator.Check `json:"-"` // `json:"checks"`
+	Checks []orm.Check `json:"checks"`
 }
 
 type UI struct {

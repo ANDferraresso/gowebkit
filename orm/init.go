@@ -2,8 +2,6 @@ package orm
 
 import (
 	"fmt"
-
-	"github.com/ANDferraresso/gowebkit/validator"
 )
 
 type Dictio struct {
@@ -43,15 +41,21 @@ func ManageErr(res *Res, debug string, err error, query string) *Res {
 	return res
 }
 
+type Check struct {
+	Func string   `json:"func"`
+	Pars []string `json:"pars"`
+}
+
 type Column struct {
-	Type          string
-	Length        string
-	NotNull       bool
-	UcDefault     string
-	Default       string
-	MinLength     string
-	MaxLength     string
-	Checks        []validator.Check
+	Type      string
+	Length    string
+	NotNull   bool
+	UcDefault string
+	Default   string
+	MinLength string
+	MaxLength string
+	// Checks        []validator.Check
+	Checks        []Check
 	UI_Widget     string
 	UI_WsUrl      string
 	UI_WsCallback string

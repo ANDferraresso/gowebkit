@@ -1,6 +1,7 @@
 package form
 
 import (
+	"github.com/ANDferraresso/gowebkit/orm"
 	"github.com/ANDferraresso/gowebkit/validator"
 )
 
@@ -36,7 +37,7 @@ func (form *Form) AddCsrfField(value string) {
 		Title:     "",
 		MinLength: "",
 		MaxLength: "",
-		Checks:    []validator.Check{},
+		Checks:    []orm.Check{},
 	}
 	form.UIs["_csrf"] = &UI{
 		Attrs:      make(map[string]string),

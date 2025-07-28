@@ -1,9 +1,11 @@
 package validator
 
+/*
 type Check struct {
 	Func string   `json:"func"`
 	Pars []string `json:"pars"`
 }
+*/
 
 type Validator struct {
 	Funcs map[string]func(value string, pars *[]string) bool

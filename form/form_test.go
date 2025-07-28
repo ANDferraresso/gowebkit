@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/ANDferraresso/gowebkit/orm"
 	"github.com/ANDferraresso/gowebkit/validator"
 )
 
@@ -38,7 +39,7 @@ func TestFormValidateField(t *testing.T) {
 		Name:      "email",
 		MinLength: "5",
 		MaxLength: "50",
-		Checks:    []validator.Check{},
+		Checks:    []orm.Check{},
 	}
 
 	ok := form.ValidateField("email", "test@example.com")
