@@ -1,8 +1,8 @@
 package validator
 
 type Check struct {
-	Func string
-	Pars []string
+	Func string   `json:"func"`
+	Pars []string `json:"pars"`
 }
 
 type Validator struct {
