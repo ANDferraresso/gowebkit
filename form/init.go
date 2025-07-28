@@ -17,7 +17,7 @@ type Field struct {
 	Img       FieldImg          `json:"field_img"`
 	MinLength string            `json:"min_length"`
 	MaxLength string            `json:"max_length"`
-	Checks    []validator.Check `json:"checks"`
+	Checks    []validator.Check `json:"-"` // `json:"checks"`
 }
 
 type UI struct {
