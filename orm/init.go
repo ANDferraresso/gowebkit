@@ -1,8 +1,6 @@
 package orm
 
-import (
-	"fmt"
-)
+import "log"
 
 type Dictio struct {
 	EntTitle string                         `json:"EntTitle"`
@@ -37,7 +35,7 @@ func ManageErr(res *Res, debug string, err error, query string) *Res {
 	default:
 
 	}
-	fmt.Println(err.Error() + " - " + query)
+	log.Println(err.Error() + " - " + query)
 	return res
 }
 
@@ -54,7 +52,7 @@ type Column struct {
 	Default   string
 	MinLength string
 	MaxLength string
-	// Checks        []validator.Check
+	// Checks        []orm.Check
 	Checks        []Check
 	UI_Widget     string
 	UI_WsUrl      string

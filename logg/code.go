@@ -2,7 +2,6 @@ package logg
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -145,19 +144,19 @@ func (l *Logger) Close() {
 		l.wg.Wait()
 		err := l.debugFile.Close()
 		if err != nil {
-			fmt.Println("Error while l.debugFile.Close()", err)
+			log.Println("Error while l.debugFile.Close()", err)
 		}
 		err = l.infoFile.Close()
 		if err != nil {
-			fmt.Println("Error while l.infoFile.Close()", err)
+			log.Println("Error while l.infoFile.Close()", err)
 		}
 		err = l.warnFile.Close()
 		if err != nil {
-			fmt.Println("Error while l.warnFile.Close()", err)
+			log.Println("Error while l.warnFile.Close()", err)
 		}
 		err = l.errorFile.Close()
 		if err != nil {
-			fmt.Println("Error while l.errorFile.Close()", err)
+			log.Println("Error while l.errorFile.Close()", err)
 		}
 	})
 }

@@ -14,7 +14,12 @@ func (form *Form) ImportTable(table *orm.Table, tableT orm.Dictio, extRefs bool,
 	form.Name = table.Name
 	form.Prefix = prefix
 	for _, v := range fields {
+		// Check if columns exists.
+		if _, ok := table.Columns[v]; !ok {
+			continue
+		}
 		form.FieldsOrder = append(form.FieldsOrder, v)
+		// Isn't tabletT empty?
 		if !reflect.DeepEqual(tableT, orm.Dictio{}) {
 			form.Fields[v] = &Field{
 				Name:      v,
@@ -32,6 +37,7 @@ func (form *Form) ImportTable(table *orm.Table, tableT orm.Dictio, extRefs bool,
 				Opts:       tableT.Opts[v],
 			}
 		} else {
+			// tabletT is empty.
 			form.Fields[v] = &Field{
 				Name:      v,
 				Title:     "",

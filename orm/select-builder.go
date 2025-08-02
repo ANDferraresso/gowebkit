@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -364,7 +365,7 @@ func (q *SelectQBuilder) Build() Res {
 		// defer rows.Close()
 		defer func() {
 			if err := rows.Close(); err != nil {
-				fmt.Println("Error deferring rows.Close()", err)
+				log.Println("[DEBUG] Error deferring rows.Close():", err)
 			}
 		}()
 		for rows.Next() {

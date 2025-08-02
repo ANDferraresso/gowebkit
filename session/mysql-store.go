@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -127,7 +127,7 @@ func (st *MysqlStore) Init(tm time.Time) (string, error) {
 			// tx.Rollback()
 			err := tx.Rollback()
 			if err != nil {
-				fmt.Println("Error while tx.Rollback()", err)
+				log.Println("[DEBUG] Error while tx.Rollback():", err)
 			}
 		}
 	}()
@@ -139,7 +139,7 @@ func (st *MysqlStore) Init(tm time.Time) (string, error) {
 	// defer stmt.Close()
 	defer func() {
 		if err := stmt.Close(); err != nil {
-			fmt.Println("Error deferring stmt.Close()", err)
+			log.Println("[DEBUG] Error deferring stmt.Close():", err)
 		}
 	}()
 
@@ -255,7 +255,7 @@ func (st *MysqlStore) Refresh(sid string) (string, error) {
 			// tx.Rollback()
 			err := tx.Rollback()
 			if err != nil {
-				fmt.Println("Error while tx.Rollback()", err)
+				log.Println("[DEBUG] Error while tx.Rollback():", err)
 			}
 		}
 	}()
@@ -272,7 +272,7 @@ func (st *MysqlStore) Refresh(sid string) (string, error) {
 	// defer stmt.Close()
 	defer func() {
 		if err := stmt.Close(); err != nil {
-			fmt.Println("Error deferring stmt.Close()", err)
+			log.Println("[DEBUG] Error deferring stmt.Close():", err)
 		}
 	}()
 
