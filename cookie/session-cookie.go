@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -12,12 +11,8 @@ const (
 	DefaultSessionCookieName = "SESSION_ID"
 )
 
-func WriteSessionCookie(w http.ResponseWriter, sKey string, value string, duration string) error {
-	var h int
-	h, err := strconv.Atoi(duration)
-	if err != nil {
-		return errors.New(ErrInvalidDuration)
-	}
+func WriteSessionCookie(w http.ResponseWriter, sKey string, value string, duration int64) error {
+	h := int(duration)
 
 	cookie := http.Cookie{
 		Name:   DefaultSessionCookieName,
