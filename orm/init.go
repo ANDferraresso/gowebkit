@@ -22,18 +22,15 @@ type OptionsRes struct {
 	Data []map[string]string
 }
 
-func ManageErr(res *Res, debug string, err error, query string) *Res {
+func ManageErr(res *Res, debug bool, err error, query string) *Res {
 	res.Err = true
 	res.Msg = "DBMS ERROR"
 	res.Data = []map[string]interface{}{}
 
-	switch debug {
-	case "0":
-		res.Msg += "."
-	case "1", "2":
+	if debug {
 		res.Msg += ": " + err.Error() + " - " + query
-	default:
-
+	} else {
+		res.Msg += "."
 	}
 	log.Println(err.Error() + " - " + query)
 	return res

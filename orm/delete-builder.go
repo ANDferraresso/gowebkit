@@ -9,7 +9,7 @@ import (
 
 type DeleteQBuilder struct {
 	db     *sql.DB
-	debug  string
+	debug  bool
 	delete string
 	where  string
 	binds  []interface{}
@@ -17,7 +17,7 @@ type DeleteQBuilder struct {
 }
 
 // Crea e ritorna un nuovo DeleteQBuilder
-func DeleteQuery(db *sql.DB, debug string) *DeleteQBuilder {
+func DeleteQuery(db *sql.DB, debug bool) *DeleteQBuilder {
 	return &DeleteQBuilder{
 		db:     db,
 		debug:  debug,

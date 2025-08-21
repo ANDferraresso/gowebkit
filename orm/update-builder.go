@@ -13,7 +13,7 @@ var (
 
 type UpdateQBuilder struct {
 	db     *sql.DB
-	debug  string
+	debug  bool
 	update string
 	set    string
 	setRaw string
@@ -24,7 +24,7 @@ type UpdateQBuilder struct {
 }
 
 // Crea e ritorna un nuovo UpdateQBuilder
-func UpdateQuery(db *sql.DB, debug string) *UpdateQBuilder {
+func UpdateQuery(db *sql.DB, debug bool) *UpdateQBuilder {
 	return &UpdateQBuilder{
 		db:     db,
 		debug:  debug,

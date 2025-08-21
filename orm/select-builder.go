@@ -11,7 +11,7 @@ import (
 
 type SelectQBuilder struct {
 	db          *sql.DB
-	debug       string
+	debug       bool
 	count       bool
 	columnNames []string
 	fields      []string
@@ -30,7 +30,7 @@ var (
 )
 
 // Crea e ritorna un nuovo SelectQBuilder
-func SelectQuery(db *sql.DB, debug string) *SelectQBuilder {
+func SelectQuery(db *sql.DB, debug bool) *SelectQBuilder {
 	return &SelectQBuilder{
 		db:          db,
 		debug:       debug,

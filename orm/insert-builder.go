@@ -13,7 +13,7 @@ var (
 
 type InsertQBuilder struct {
 	db        *sql.DB
-	debug     string
+	debug     bool
 	insert    string
 	columns   []string
 	valuesStr string
@@ -23,7 +23,7 @@ type InsertQBuilder struct {
 }
 
 // Crea e ritorna un nuovo InsertQBuilder
-func InsertQuery(db *sql.DB, debug string) *InsertQBuilder {
+func InsertQuery(db *sql.DB, debug bool) *InsertQBuilder {
 	return &InsertQBuilder{
 		db:        db,
 		debug:     debug,
