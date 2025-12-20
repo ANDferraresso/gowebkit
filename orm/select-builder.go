@@ -13,6 +13,7 @@ type SelectQBuilder struct {
 	db          *sql.DB
 	debug       bool
 	count       bool
+	distinct    bool
 	columnNames []string
 	fields      []string
 	from        []string
@@ -35,6 +36,7 @@ func SelectQuery(db *sql.DB, debug bool) *SelectQBuilder {
 		db:          db,
 		debug:       debug,
 		count:       false,
+		distinct:    false,
 		columnNames: []string{},
 		fields:      []string{},
 		from:        []string{},
@@ -51,6 +53,12 @@ func SelectQuery(db *sql.DB, debug bool) *SelectQBuilder {
 // COUNT
 func (q *SelectQBuilder) Count() *SelectQBuilder {
 	q.count = true
+	return q
+}
+
+// DISTINCT
+func (q *SelectQBuilder) Distinct() *SelectQBuilder {
+	q.distinct = true
 	return q
 }
 
@@ -305,7 +313,11 @@ func (q *SelectQBuilder) Build() Res {
 		s.WriteString("SELECT COUNT(*) AS `CNT`")
 		q.columnNames = []string{"CNT"}
 	} else {
-		s.WriteString("SELECT ")
+		if q.distinct {
+			s.WriteString("SELECT DISTINCT")
+		} else {
+			s.WriteString("SELECT ")
+		}
 		for i, f := range q.fields {
 			if i < len(q.fields)-1 {
 				s.WriteString(fmt.Sprintf("%s, ", f))
