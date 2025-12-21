@@ -314,7 +314,7 @@ func (q *SelectQBuilder) Build() Res {
 		q.columnNames = []string{"CNT"}
 	} else {
 		if q.distinct {
-			s.WriteString("SELECT DISTINCT ")
+			s.WriteString("SELECT DISTINCT")
 		} else {
 			s.WriteString("SELECT ")
 		}
