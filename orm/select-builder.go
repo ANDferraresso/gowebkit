@@ -299,7 +299,7 @@ func (q *SelectQBuilder) Order(order [][2]string) *SelectQBuilder {
 			if comp_s2a.Match([]byte(v)) {
 				c := strings.Split(v, ".")
 				// c[0] Nome tabella. c[1] Nome colonna
-				order[i][0] = fmt.Sprintf("`%s`.`%s`", c[0], c[2])
+				order[i][0] = fmt.Sprintf("`%s`.`%s`", c[0], c[1])
 			} else {
 				// Errore.
 				q.err = true
