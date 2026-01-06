@@ -287,6 +287,29 @@ func (q *SelectQBuilder) Where(inputs ...interface{}) *SelectQBuilder {
 
 // ORDER
 func (q *SelectQBuilder) Order(order [][2]string) *SelectQBuilder {
+	s2a := `^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$` // Es. c.ID
+	comp_s2a := regexp.MustCompile(s2a)
+
+	v := ""
+	for i := range order {
+		v = order[i][0]
+		if selTableNameRegex.Match([]byte(v)) { // ^[a-zA-Z_][a-zA-Z0-9_]*$
+			order[i][0] = fmt.Sprintf("`%s`", v)
+		} else {
+			if comp_s2a.Match([]byte(v)) {
+				c := strings.Split(v, ".")
+				// c[0] Nome tabella. c[1] Nome colonna
+				order[i][0] = fmt.Sprintf("`%s`.`%s`", c[0], c[2])
+			} else {
+				// Errore.
+				q.err = true
+				q.errStr = ""
+				q.order = [][2]string{}
+				break
+			}
+		}
+	}
+
 	q.order = order
 	return q
 }
@@ -344,9 +367,9 @@ func (q *SelectQBuilder) Build() Res {
 		s.WriteString(" ORDER BY ")
 		for i, ord := range q.order {
 			if i < len(q.order)-1 {
-				s.WriteString(fmt.Sprintf("`%s` %s, ", ord[0], ord[1]))
+				s.WriteString(fmt.Sprintf("%s %s, ", ord[0], ord[1]))
 			} else {
-				s.WriteString(fmt.Sprintf("`%s` %s", ord[0], ord[1]))
+				s.WriteString(fmt.Sprintf("%s %s", ord[0], ord[1]))
 			}
 		}
 	}
