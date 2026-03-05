@@ -48,8 +48,9 @@ func (val *Validator) SetupValidator() {
 		"isMinLength":     IsMinLength,
 		"isRegex":         IsRegex,
 		// Other
-		"isInSet": IsInSet,
-		"isJson":  IsJson,
+		"isGoogleMapsLatLng": IsGoogleMapsLatLng,
+		"isInSet":            IsInSet,
+		"isJson":             IsJson,
 	}
 }
 
