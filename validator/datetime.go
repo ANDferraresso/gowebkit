@@ -18,14 +18,14 @@ func IsDateTime(value string, pars *[]string) bool {
 	if !dateValidator(date, (*pars)[0]) {
 		return false
 	}
-	if !timeValidator(time) {
+	if !timeValidator(time, "HMS") {
 		return false
 	}
 	return true
 }
 
 func IsTime(value string, pars *[]string) bool {
-	return timeValidator(value)
+	return timeValidator(value, (*pars)[0])
 }
 
 // pars = mode (it|eng|iso), from (date; iso mode), to (date; iso mode)
@@ -53,7 +53,7 @@ func IsDateInRange(value string, pars *[]string) bool {
 func IsTimeInRange(value string, pars *[]string) bool {
 	var err error
 
-	if !timeValidator(value) {
+	if !timeValidator(value, "HMS") {
 		return false
 	}
 
@@ -239,39 +239,82 @@ func dateValidator(value string, mode string) bool {
 }
 
 // Formato (tempo): hh:mm:ss
-func timeValidator(value string) bool {
+func timeValidator(value string, mode string) bool {
 	var err error
-
-	re := regexp.MustCompile(`^[0-9]{2}:[0-9]{2}:[0-9]{2}$`)
-	if !re.Match([]byte(value)) {
-		return false
-	}
-
 	var h int
 	var m int
 	var s int
 
-	h, err = strconv.Atoi(value[0:2])
-	if err != nil {
-		return false
-	}
-	m, err = strconv.Atoi(value[3:5])
-	if err != nil {
-		return false
-	}
-	s, err = strconv.Atoi(value[6:8])
-	if err != nil {
+	switch mode {
+	case "H": // HH
+		re := regexp.MustCompile(`^[0-9]{2}$`)
+		if !re.Match([]byte(value)) {
+			return false
+		}
+		h, err = strconv.Atoi(value[0:2])
+		if err != nil {
+			return false
+		}
+
+		if h < 0 || h > 23 {
+			return false
+		}
+		return true
+
+	case "HM": // HH:MM
+		re := regexp.MustCompile(`^[0-9]{2}:[0-9]{2}$`)
+		if !re.Match([]byte(value)) {
+			return false
+		}
+		h, err = strconv.Atoi(value[0:2])
+		if err != nil {
+			return false
+		}
+		m, err = strconv.Atoi(value[3:5])
+		if err != nil {
+			return false
+		}
+
+		if h < 0 || h > 23 {
+			return false
+		}
+		if m < 0 || m > 59 {
+			return false
+		}
+		return true
+
+	case "HMS": // HH:MM:SS
+		re := regexp.MustCompile(`^[0-9]{2}:[0-9]{2}:[0-9]{2}$`)
+		if !re.Match([]byte(value)) {
+			return false
+		}
+		h, err = strconv.Atoi(value[0:2])
+		if err != nil {
+			return false
+		}
+		m, err = strconv.Atoi(value[3:5])
+		if err != nil {
+			return false
+		}
+		s, err = strconv.Atoi(value[6:8])
+		if err != nil {
+			return false
+		}
+
+		if h < 0 || h > 23 {
+			return false
+		}
+		if m < 0 || m > 59 {
+			return false
+		}
+		if s < 0 || s > 59 {
+			return false
+		}
+		return true
+
+	default:
 		return false
 	}
 
-	if h < 0 || h > 23 {
-		return false
-	}
-	if m < 0 || m > 59 {
-		return false
-	}
-	if s < 0 || s > 59 {
-		return false
-	}
-	return true
+
 }
