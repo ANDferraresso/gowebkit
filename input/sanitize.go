@@ -2,12 +2,21 @@ package input
 
 import "strings"
 
+// NormalizeSingleLine rimuove gli spazi bianchi ai bordi di un campo
+// monoriga già validato, conservando i caratteri all'interno del valore.
+func NormalizeSingleLine(s string) string {
+	return strings.TrimSpace(s)
+}
+
 // Sanitize rimuove o sostituisce un insieme fisso di caratteri "pericolosi".
 //
 // ATTENZIONE: non è una protezione da XSS né da SQL injection. Contro l'XSS
 // usa l'escaping in output (html/template); contro la SQL injection usa le
 // query parametrizzate (i builder di orm). Il parametro level è attualmente
 // ignorato ed è mantenuto per compatibilità.
+//
+// Deprecated: valida ogni campo secondo il suo formato. Usa
+// NormalizeSingleLine dove gli spazi ai bordi sono irrilevanti.
 func Sanitize(str string, level int) string {
 	// Array di caratteri da rimuovere
 	arr := []string{`"`, `\`, "@", "%", "_", "^", "*", "(", ")", "[", "]", "{", "}", "|", "/", "$", "#", "<", "&", ">", "+", "--"}
