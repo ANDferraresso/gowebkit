@@ -10,6 +10,10 @@ import (
 // codifiche HTML/URL, attributi on* non elencati). Usala solo come controllo
 // euristico in più: la vera difesa è l'escaping in output con html/template
 // (ed eventualmente una Content-Security-Policy).
+//
+// Deprecated: non affidarti a una blacklist. Valida l'input secondo il suo
+// formato (pacchetto validator) ed esegui l'escaping in output con
+// html/template, o html.EscapeString fuori dai template.
 func ContainsXSS(input string) bool {
 	lowerInput := strings.ToLower(input)
 

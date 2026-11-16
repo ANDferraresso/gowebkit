@@ -24,6 +24,8 @@ type MysqlStore struct {
 // noExpiryDate è il valore salvato per una sessione senza scadenza (tm zero).
 const noExpiryDate = "0001-01-01 00:00:00"
 
+var _ ExpiredCleaner = (*MysqlStore)(nil)
+
 // queryRower è soddisfatto sia da *sql.DB sia da *sql.Tx.
 type queryRower interface {
 	QueryRow(query string, args ...any) *sql.Row
@@ -258,6 +260,24 @@ func (st *MysqlStore) Delete(sid string) error {
 		return errors.New(ErrSqlDeleteQuery)
 	}
 	return nil
+}
+
+func (st *MysqlStore) deleteExpiredQuery(now time.Time) (string, []interface{}) {
+	// expires_at > noExpiryDate esclude le sessioni senza scadenza
+	// (anche le vecchie date zero '0000-00-00 00:00:00').
+	return "DELETE FROM `" + st.tableName + "` WHERE `expires_at` > ? AND `expires_at` < ?",
+		[]interface{}{noExpiryDate, formatExpiresAt(now)}
+}
+
+// DeleteExpired cancella tutte le sessioni scadute (vedi ExpiredCleaner).
+func (st *MysqlStore) DeleteExpired() (int64, error) {
+	query, args := st.deleteExpiredQuery(time.Now())
+	r, err := st.db.Exec(query, args...)
+	if err != nil {
+		return 0, errors.New(ErrSqlDeleteQuery)
+	}
+	n, _ := r.RowsAffected()
+	return n, nil
 }
 
 // Sostituisce il sid della sessione con uno nuovo, mantenendo dati e scadenza

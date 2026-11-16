@@ -234,3 +234,20 @@ func TestDefaultDialect(t *testing.T) {
 		t.Errorf("explicit MySQL delete = %q, err %v", query, err)
 	}
 }
+
+func TestILike(t *testing.T) {
+	q := SelectQuery(nil, false).Select("name").From("t").Where("name ILIKE ?", "an%", "AND", "c.city ILIKE ?", "ro%")
+	query, _, _, err := q.toSQL()
+	if want := "SELECT `name` FROM `t` WHERE `name` LIKE ? AND `c`.`city` LIKE ?"; err != nil || query != want {
+		t.Errorf("mysql = %q, err %v; want %q", query, err, want)
+	}
+	query, _, _, err = q.Dialect(Postgres).toSQL()
+	if want := `SELECT "name" FROM "t" WHERE "name" ILIKE $1 AND "c"."city" ILIKE $2`; err != nil || query != want {
+		t.Errorf("postgres = %q, err %v; want %q", query, err, want)
+	}
+	// A column named ILIKE is quoted and must not be rewritten.
+	query, _, err = DeleteQuery(nil, false).Delete("t").Where("ILIKE = ?", 1).toSQL()
+	if want := "DELETE FROM `t` WHERE `ILIKE` = ?"; err != nil || query != want {
+		t.Errorf("column ILIKE = %q, err %v; want %q", query, err, want)
+	}
+}

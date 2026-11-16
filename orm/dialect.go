@@ -51,7 +51,9 @@ func (d Dialect) valid() bool {
 func (d Dialect) render(fragment string, n *int) string {
 	if d != Postgres {
 		*n += strings.Count(fragment, "?")
-		return fragment
+		// MySQL has no ILIKE; LIKE is case-insensitive with _ci collations.
+		// Identifiers are always quoted, so " ILIKE " can only be the operator.
+		return strings.ReplaceAll(fragment, " ILIKE ", " LIKE ")
 	}
 	var sb strings.Builder
 	sb.Grow(len(fragment) + 8)

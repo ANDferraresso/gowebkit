@@ -18,8 +18,8 @@ var (
 	setCondRe        = regexp.MustCompile(`^` + identPattern + ` = \?$`)
 
 	// WHERE conditions. "a" = plain column, "b" = qualified column (table.column).
-	condValueARe = regexp.MustCompile(`^` + identPattern + ` (<|=|>|<>|<=|>=|LIKE) \?$`)
-	condValueBRe = regexp.MustCompile(`^` + identPattern + `\.` + identPattern + ` (<|=|>|<>|<=|>=|LIKE) \?$`)
+	condValueARe = regexp.MustCompile(`^` + identPattern + ` (<|=|>|<>|<=|>=|LIKE|ILIKE) \?$`)
+	condValueBRe = regexp.MustCompile(`^` + identPattern + `\.` + identPattern + ` (<|=|>|<>|<=|>=|LIKE|ILIKE) \?$`)
 	condNullARe  = regexp.MustCompile(`^` + identPattern + ` (IS NULL|IS NOT NULL)$`)
 	condNullBRe  = regexp.MustCompile(`^` + identPattern + `\.` + identPattern + ` (IS NULL|IS NOT NULL)$`)
 	condColARe   = regexp.MustCompile(`^` + identPattern + ` (<|=|>|<>|<=|>=) ` + identPattern + `$`)
@@ -47,6 +47,10 @@ func quoteQualified(s string) string {
 //	"(", "id = ?", 1, "OR", "name IS NULL", ")", "AND", "c.age > ?", 18
 //
 // qualified enables conditions on table.column (used by SELECT).
+//
+// Operators: <, =, >, <>, <=, >=, LIKE, ILIKE. ILIKE is a case-insensitive
+// LIKE: it is emitted as is for Postgres and rendered as LIKE for MySQL,
+// where LIKE is already case-insensitive with the default (_ci) collations.
 func parseWhere(inputs []interface{}, qualified bool) (string, []interface{}, error) {
 	var sb strings.Builder
 	binds := []interface{}{}

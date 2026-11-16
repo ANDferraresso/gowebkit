@@ -22,7 +22,10 @@ type PostgresStore struct {
 	tableName string
 }
 
-var _ Store = (*PostgresStore)(nil)
+var (
+	_ Store          = (*PostgresStore)(nil)
+	_ ExpiredCleaner = (*PostgresStore)(nil)
+)
 
 func (st *PostgresStore) CreateStore() string {
 	return `CREATE TABLE "` + st.tableName + `" (` + "\n" +
@@ -190,6 +193,22 @@ func (st *PostgresStore) Delete(sid string) error {
 		return errors.New(ErrSqlDeleteQuery)
 	}
 	return nil
+}
+
+func (st *PostgresStore) deleteExpiredQuery(now time.Time) (string, []interface{}) {
+	// NULL < $1 non è vero: le sessioni senza scadenza non vengono toccate.
+	return `DELETE FROM ` + st.table() + ` WHERE "expires_at" < $1`, []interface{}{now}
+}
+
+// DeleteExpired cancella tutte le sessioni scadute (vedi ExpiredCleaner).
+func (st *PostgresStore) DeleteExpired() (int64, error) {
+	query, args := st.deleteExpiredQuery(time.Now())
+	r, err := st.db.Exec(query, args...)
+	if err != nil {
+		return 0, errors.New(ErrSqlDeleteQuery)
+	}
+	n, _ := r.RowsAffected()
+	return n, nil
 }
 
 // Sostituisce il sid della sessione con uno nuovo, mantenendo dati e scadenza.

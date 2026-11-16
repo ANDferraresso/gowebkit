@@ -48,3 +48,20 @@ func TestPostgresStoreNoDB(t *testing.T) {
 		t.Error("future expires_at must not be expired")
 	}
 }
+
+func TestDeleteExpiredQueries(t *testing.T) {
+	now := time.Date(2026, 11, 16, 10, 30, 0, 0, time.Local)
+
+	pg := &PostgresStore{tableName: "sessions"}
+	q, args := pg.deleteExpiredQuery(now)
+	if q != `DELETE FROM "sessions" WHERE "expires_at" < $1` || len(args) != 1 || args[0] != now {
+		t.Errorf("postgres: %q %v", q, args)
+	}
+
+	my := &MysqlStore{tableName: "sessions"}
+	q, args = my.deleteExpiredQuery(now)
+	if q != "DELETE FROM `sessions` WHERE `expires_at` > ? AND `expires_at` < ?" ||
+		len(args) != 2 || args[0] != noExpiryDate || args[1] != "2026-11-16 10:30:00" {
+		t.Errorf("mysql: %q %v", q, args)
+	}
+}

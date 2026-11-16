@@ -54,6 +54,15 @@ type Store interface {
 	Refresh(sid string) (string, error)
 }
 
+// ExpiredCleaner è implementato dagli store SQL (MysqlStore, PostgresStore),
+// dove le sessioni scadute vengono cancellate solo quando qualcuno le legge:
+// chiama DeleteExpired periodicamente (es. con un time.Ticker) per eliminare
+// quelle abbandonate. Gli store Redis/Valkey non ne hanno bisogno (TTL nativo).
+type ExpiredCleaner interface {
+	// DeleteExpired cancella le sessioni scadute e ritorna quante ne ha cancellate.
+	DeleteExpired() (int64, error)
+}
+
 func generateSessionID() (string, error) {
 	// uuid.NewString()
 	b := make([]byte, 32)
