@@ -54,6 +54,16 @@ func (val *Validator) SetupValidator() {
 	}
 }
 
+// par returns the i-th parameter, or ok=false when pars is nil or too short.
+// Validators use it so that a missing parameter makes validation fail
+// instead of panicking.
+func par(pars *[]string, i int) (string, bool) {
+	if pars == nil || i < 0 || i >= len(*pars) {
+		return "", false
+	}
+	return (*pars)[i], true
+}
+
 func (val *Validator) Validate(f string, value string, pars *[]string) bool {
 	fn, exists := val.Funcs[f]
 	if !exists {

@@ -3,73 +3,60 @@ package validator
 import (
 	"regexp"
 	"strconv"
+	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
+// passwordSpecialChars is the set of characters that count as "special"
+// for the password levels B and D.
+const passwordSpecialChars = `@$!%*#?&`
+
+// IsPassword checks the password strength; (*pars)[0] is the level:
+//
+//	A: minimum eight characters, at least one letter and one number.
+//	B: minimum eight characters, at least one letter, one number and one special character.
+//	C: minimum eight characters, at least one uppercase letter, one lowercase letter and one number.
+//	D: minimum eight characters, at least one uppercase letter, one lowercase letter, one number and one special character.
+//
+// The whole value is checked (not just a substring); characters other than
+// the required ones are allowed.
 func IsPassword(value string, pars *[]string) bool {
-	switch (*pars)[0] {
-	case "A":
-		// Minimum eight characters, at least one letter and one number.
-		re := regexp.MustCompile(`[A-Za-z0-9]{8,}`)
-		if !re.Match([]byte(value)) {
-			return false
-		} else {
-			re1 := regexp.MustCompile(`[A-Za-z]+`)
-			re2 := regexp.MustCompile(`[0-9]+`)
-			if re1.Match([]byte(value)) && re2.Match([]byte(value)) {
-				return true
-			} else {
-				return false
-			}
+	level, ok := par(pars, 0)
+	if !ok {
+		return false
+	}
+	if utf8.RuneCountInString(value) < 8 {
+		return false
+	}
+
+	var hasLetter, hasUpper, hasLower, hasDigit, hasSpecial bool
+	for _, r := range value {
+		switch {
+		case unicode.IsUpper(r):
+			hasLetter, hasUpper = true, true
+		case unicode.IsLower(r):
+			hasLetter, hasLower = true, true
+		case unicode.IsLetter(r):
+			hasLetter = true
+		case r >= '0' && r <= '9':
+			hasDigit = true
 		}
-	case "B":
-		// Minimum eight characters, at least one letter, one number and one special character.
-		re := regexp.MustCompile(`[A-Za-z0-9@\$!%\*#\?&]{8,}`)
-		if !re.Match([]byte(value)) {
-			return false
-		} else {
-			re1 := regexp.MustCompile(`[A-Za-z]+`)
-			re2 := regexp.MustCompile(`[0-9]+`)
-			re3 := regexp.MustCompile(`[@\$!%\*#\?&]+`)
-			if re1.Match([]byte(value)) && re2.Match([]byte(value)) && re3.Match([]byte(value)) {
-				return true
-			} else {
-				return false
-			}
-		}
-	case "C":
-		// Minimum eight characters, at least one uppercase letter, one lowercase letter and one number.
-		re := regexp.MustCompile(`[A-Za-z0-9]{8,}`)
-		if !re.Match([]byte(value)) {
-			return false
-		} else {
-			re1 := regexp.MustCompile(`[A-Z]+`)
-			re2 := regexp.MustCompile(`[a-z]+`)
-			re3 := regexp.MustCompile(`[0-9]+`)
-			if re1.Match([]byte(value)) && re2.Match([]byte(value)) && re3.Match([]byte(value)) {
-				return true
-			} else {
-				return false
-			}
-		}
-	case "D":
-		// Minimum eight characters, at least one uppercase letter, one lowercase letter, one number and one special character.
-		re := regexp.MustCompile(`[A-Za-z0-9@\$!%\*#\?&]{8,}`)
-		if !re.Match([]byte(value)) {
-			return false
-		} else {
-			re1 := regexp.MustCompile(`[A-Z]+`)
-			re2 := regexp.MustCompile(`[a-z]+`)
-			re3 := regexp.MustCompile(`[0-9]+`)
-			re4 := regexp.MustCompile(`[@\$!%\*#\?&]+`)
-			if re1.Match([]byte(value)) && re2.Match([]byte(value)) && re3.Match([]byte(value)) && re4.Match([]byte(value)) {
-				return true
-			} else {
-				return false
-			}
+		if strings.ContainsRune(passwordSpecialChars, r) {
+			hasSpecial = true
 		}
 	}
 
+	switch level {
+	case "A":
+		return hasLetter && hasDigit
+	case "B":
+		return hasLetter && hasDigit && hasSpecial
+	case "C":
+		return hasUpper && hasLower && hasDigit
+	case "D":
+		return hasUpper && hasLower && hasDigit && hasSpecial
+	}
 	return false
 }
 
@@ -77,71 +64,85 @@ func AllowedChars(value string, pars *[]string) bool {
 	if utf8.RuneCountInString(value) == 0 {
 		return true
 	}
-	re := regexp.MustCompile("^[" + (*pars)[0] + "]*$")
-	return re.Match([]byte(value))
+	chars, ok := par(pars, 0)
+	if !ok {
+		return false
+	}
+	re, err := regexp.Compile("^[" + chars + "]*$")
+	if err != nil {
+		return false
+	}
+	return re.MatchString(value)
 }
 
 func ForbiddenChars(value string, pars *[]string) bool {
 	if utf8.RuneCountInString(value) == 0 {
 		return true
 	}
-	re := regexp.MustCompile("^[^" + (*pars)[0] + "]*$")
-	return re.Match([]byte(value))
+	chars, ok := par(pars, 0)
+	if !ok {
+		return false
+	}
+	re, err := regexp.Compile("^[^" + chars + "]*$")
+	if err != nil {
+		return false
+	}
+	return re.MatchString(value)
 }
 
 func IsStringEqual(value string, pars *[]string) bool {
-	return value == (*pars)[0]
+	s, ok := par(pars, 0)
+	return ok && value == s
+}
+
+// lengthPar parses the i-th parameter as int.
+func lengthPar(pars *[]string, i int) (int, bool) {
+	s, ok := par(pars, i)
+	if !ok {
+		return 0, false
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, false
+	}
+	return n, true
 }
 
 func IsLength(value string, pars *[]string) bool {
-	length, err := strconv.Atoi((*pars)[0])
-	if err != nil {
-		return false
-	}
-	if utf8.RuneCountInString(value) == length {
-		return true
-	}
-	return false
+	length, ok := lengthPar(pars, 0)
+	return ok && utf8.RuneCountInString(value) == length
 }
 
 func IsLengthInRange(value string, pars *[]string) bool {
-	lengthA, err := strconv.Atoi((*pars)[0])
-	if err != nil {
+	lengthA, okA := lengthPar(pars, 0)
+	lengthB, okB := lengthPar(pars, 1)
+	if !okA || !okB {
 		return false
 	}
-	lengthB, err := strconv.Atoi((*pars)[1])
-	if err != nil {
-		return false
-	}
-	if utf8.RuneCountInString(value) >= lengthA && utf8.RuneCountInString(value) <= lengthB {
-		return true
-	}
-	return false
+	n := utf8.RuneCountInString(value)
+	return n >= lengthA && n <= lengthB
 }
 
 func IsMaxLength(value string, pars *[]string) bool {
-	length, err := strconv.Atoi((*pars)[0])
-	if err != nil {
-		return false
-	}
-	if utf8.RuneCountInString(value) <= length {
-		return true
-	}
-	return false
+	length, ok := lengthPar(pars, 0)
+	return ok && utf8.RuneCountInString(value) <= length
 }
 
 func IsMinLength(value string, pars *[]string) bool {
-	length, err := strconv.Atoi((*pars)[0])
+	length, ok := lengthPar(pars, 0)
+	return ok && utf8.RuneCountInString(value) >= length
+}
+
+// IsRegex matches value against the pattern in (*pars)[0].
+// An invalid pattern makes the validation fail instead of panicking.
+func IsRegex(value string, pars *[]string) bool {
+	pattern, ok := par(pars, 0)
+	if !ok {
+		return false
+	}
+	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return false
 	}
-	if utf8.RuneCountInString(value) >= length {
-		return true
-	}
-	return false
-}
-
-func IsRegex(value string, pars *[]string) bool {
-	re := regexp.MustCompile((*pars)[0])
-	return re.Match([]byte(value))
+	return re.MatchString(value)
 }

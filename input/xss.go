@@ -4,6 +4,12 @@ import (
 	"strings"
 )
 
+// ContainsXSS segnala la presenza di alcuni pattern XSS comuni.
+//
+// ATTENZIONE: è una blacklist e si aggira facilmente (es. <details ontoggle=...>,
+// codifiche HTML/URL, attributi on* non elencati). Usala solo come controllo
+// euristico in più: la vera difesa è l'escaping in output con html/template
+// (ed eventualmente una Content-Security-Policy).
 func ContainsXSS(input string) bool {
 	lowerInput := strings.ToLower(input)
 

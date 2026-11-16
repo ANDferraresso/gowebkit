@@ -40,6 +40,9 @@ func IsGoogleMapsLatLng(value string, pars *[]string) bool {
 }
 
 func IsInSet(value string, pars *[]string) bool {
+	if pars == nil {
+		return false
+	}
 	return slices.Contains(*pars, value)
 }
 

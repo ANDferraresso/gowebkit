@@ -90,7 +90,7 @@ func (form *Form) ValidateAll(r *http.Request) (bool, map[string]interface{}, []
 	}
 
 	if len(wrongFields) > 0 {
-		return true, fValues, wrongFields
+		return false, fValues, wrongFields
 	}
 
 	return true, fValues, wrongFields

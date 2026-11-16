@@ -22,6 +22,9 @@ const (
 	ErrParsingExpiresAt      = "error while parsing expires_at"
 	ErrUnableUnserializeJson = "unable to unserialize json data"
 	ErrInvTableName          = "invalid table name"
+	ErrInvStoreClient        = "invalid store client"
+	ErrInvExpiration         = "expiration time is in the past"
+	ErrSessionConflict       = "session modified concurrently, retry"
 )
 
 const dateFormat = "2006-01-02 15:04:05"
