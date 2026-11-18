@@ -8,39 +8,62 @@ import (
 
 // (*pars)[0] = mode (it|eng|iso)
 func IsDate(value string, pars *[]string) bool {
-	return dateValidator(value, (*pars)[0])
+	mode, ok := par(pars, 0)
+	if !ok {
+		return false
+	}
+	return dateValidator(value, mode)
 }
 
 // (*pars)[0] = mode (it|eng|iso)
+// Formato: "<data> HH:MM:SS" (separatore spazio oppure 'T').
 func IsDateTime(value string, pars *[]string) bool {
-	date := value[0:10]
-	time := value[11:19]
-	if !dateValidator(date, (*pars)[0]) {
+	mode, ok := par(pars, 0)
+	if !ok {
 		return false
 	}
-	if !timeValidator(time, "HMS") {
+	if len(value) != 19 || (value[10] != ' ' && value[10] != 'T') {
+		return false
+	}
+	if !dateValidator(value[0:10], mode) {
+		return false
+	}
+	if !timeValidator(value[11:19], "HMS") {
 		return false
 	}
 	return true
 }
 
 func IsTime(value string, pars *[]string) bool {
-	return timeValidator(value, (*pars)[0])
+	mode, ok := par(pars, 0)
+	if !ok {
+		return false
+	}
+	return timeValidator(value, mode)
 }
 
 // pars = mode (it|eng|iso), from (date; iso mode), to (date; iso mode)
 func IsDateInRange(value string, pars *[]string) bool {
-	if !dateValidator(value, (*pars)[0]) {
+	mode, ok0 := par(pars, 0)
+	from, ok1 := par(pars, 1)
+	to, ok2 := par(pars, 2)
+	if !ok0 || !ok1 || !ok2 {
 		return false
 	}
-	v := convertDate(value, (*pars)[0], "iso")
+	if !dateValidator(from, "iso") || !dateValidator(to, "iso") {
+		return false
+	}
+	if !dateValidator(value, mode) {
+		return false
+	}
+	v := convertDate(value, mode, "iso")
 
 	var date1 string
 	var date2 string
 	var dateV string
 
-	date1 = (*pars)[1][0:4] + (*pars)[1][5:7] + (*pars)[1][8:10]
-	date2 = (*pars)[2][0:4] + (*pars)[2][5:7] + (*pars)[2][8:10]
+	date1 = from[0:4] + from[5:7] + from[8:10]
+	date2 = to[0:4] + to[5:7] + to[8:10]
 	dateV = v[0:4] + v[5:7] + v[8:10]
 
 	if dateV >= date1 && dateV <= date2 {
@@ -53,6 +76,11 @@ func IsDateInRange(value string, pars *[]string) bool {
 func IsTimeInRange(value string, pars *[]string) bool {
 	var err error
 
+	from, ok1 := par(pars, 0)
+	to, ok2 := par(pars, 1)
+	if !ok1 || !ok2 || !timeValidator(from, "HMS") || !timeValidator(to, "HMS") {
+		return false
+	}
 	if !timeValidator(value, "HMS") {
 		return false
 	}
@@ -67,29 +95,29 @@ func IsTimeInRange(value string, pars *[]string) bool {
 	var timeV_m int
 	var timeV_s int
 
-	time1_h, err = strconv.Atoi((*pars)[0][0:2])
+	time1_h, err = strconv.Atoi(from[0:2])
 	if err != nil {
 		return false
 	}
-	time1_m, err = strconv.Atoi((*pars)[0][3:5])
+	time1_m, err = strconv.Atoi(from[3:5])
 	if err != nil {
 		return false
 	}
-	time1_s, err = strconv.Atoi((*pars)[0][6:8])
+	time1_s, err = strconv.Atoi(from[6:8])
 	if err != nil {
 		return false
 	}
 	time1 := time1_h*3600 + time1_m*60 + time1_s
 
-	time2_h, err = strconv.Atoi((*pars)[1][0:2])
+	time2_h, err = strconv.Atoi(to[0:2])
 	if err != nil {
 		return false
 	}
-	time2_m, err = strconv.Atoi((*pars)[1][3:5])
+	time2_m, err = strconv.Atoi(to[3:5])
 	if err != nil {
 		return false
 	}
-	time2_s, err = strconv.Atoi((*pars)[1][6:8])
+	time2_s, err = strconv.Atoi(to[6:8])
 	if err != nil {
 		return false
 	}
@@ -150,6 +178,15 @@ func convertDate(value string, fromMode string, toMode string) string {
 	}
 }
 
+// Regex dei formati di data e ora, compilate una volta sola.
+var (
+	dateDMYRe = regexp.MustCompile(`^[0-9]{2}-[0-9]{2}-[0-9]{4}$`) // DD-MM-YYYY e MM-DD-YYYY
+	dateISORe = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`) // YYYY-MM-DD
+	timeHRe   = regexp.MustCompile(`^[0-9]{2}$`)
+	timeHMRe  = regexp.MustCompile(`^[0-9]{2}:[0-9]{2}$`)
+	timeHMSRe = regexp.MustCompile(`^[0-9]{2}:[0-9]{2}:[0-9]{2}$`)
+)
+
 func dateValidator(value string, mode string) bool {
 	var err error
 
@@ -163,8 +200,7 @@ func dateValidator(value string, mode string) bool {
 
 	switch mode {
 	case "it": // DD-MM-YYYY
-		re := regexp.MustCompile(`^[0-9]{2}\-[0-9]{2}\-[0-9]{4}$`)
-		if !re.Match([]byte(value)) {
+		if !dateDMYRe.MatchString(value) {
 			return false
 		}
 		d, err = strconv.Atoi(value[0:2])
@@ -180,8 +216,7 @@ func dateValidator(value string, mode string) bool {
 			return false
 		}
 	case "en": // MM-DD-YYYY
-		re := regexp.MustCompile(`^[0-9]{2}\-[0-9]{2}\-[0-9]{4}$`)
-		if !re.Match([]byte(value)) {
+		if !dateDMYRe.MatchString(value) {
 			return false
 		}
 		d, err = strconv.Atoi(value[3:5])
@@ -197,8 +232,7 @@ func dateValidator(value string, mode string) bool {
 			return false
 		}
 	case "iso": // YYYY-MM-DD
-		re := regexp.MustCompile(`^[0-9]{4}\-[0-9]{2}\-[0-9]{2}$`)
-		if !re.Match([]byte(value)) {
+		if !dateISORe.MatchString(value) {
 			return false
 		}
 		d, err = strconv.Atoi(value[8:10])
@@ -247,8 +281,7 @@ func timeValidator(value string, mode string) bool {
 
 	switch mode {
 	case "H": // HH
-		re := regexp.MustCompile(`^[0-9]{2}$`)
-		if !re.Match([]byte(value)) {
+		if !timeHRe.MatchString(value) {
 			return false
 		}
 		h, err = strconv.Atoi(value[0:2])
@@ -262,8 +295,7 @@ func timeValidator(value string, mode string) bool {
 		return true
 
 	case "HM": // HH:MM
-		re := regexp.MustCompile(`^[0-9]{2}:[0-9]{2}$`)
-		if !re.Match([]byte(value)) {
+		if !timeHMRe.MatchString(value) {
 			return false
 		}
 		h, err = strconv.Atoi(value[0:2])
@@ -284,8 +316,7 @@ func timeValidator(value string, mode string) bool {
 		return true
 
 	case "HMS": // HH:MM:SS
-		re := regexp.MustCompile(`^[0-9]{2}:[0-9]{2}:[0-9]{2}$`)
-		if !re.Match([]byte(value)) {
+		if !timeHMSRe.MatchString(value) {
 			return false
 		}
 		h, err = strconv.Atoi(value[0:2])
@@ -315,6 +346,5 @@ func timeValidator(value string, mode string) bool {
 	default:
 		return false
 	}
-
 
 }

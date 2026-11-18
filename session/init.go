@@ -22,6 +22,9 @@ const (
 	ErrParsingExpiresAt      = "error while parsing expires_at"
 	ErrUnableUnserializeJson = "unable to unserialize json data"
 	ErrInvTableName          = "invalid table name"
+	ErrInvStoreClient        = "invalid store client"
+	ErrInvExpiration         = "expiration time is in the past"
+	ErrSessionConflict       = "session modified concurrently, retry"
 )
 
 const dateFormat = "2006-01-02 15:04:05"
@@ -49,6 +52,15 @@ type Store interface {
 	RemoveKey(sid string, key string) error
 	Delete(sid string) error
 	Refresh(sid string) (string, error)
+}
+
+// ExpiredCleaner è implementato dagli store SQL (MysqlStore, PostgresStore),
+// dove le sessioni scadute vengono cancellate solo quando qualcuno le legge:
+// chiama DeleteExpired periodicamente (es. con un time.Ticker) per eliminare
+// quelle abbandonate. Gli store Redis/Valkey non ne hanno bisogno (TTL nativo).
+type ExpiredCleaner interface {
+	// DeleteExpired cancella le sessioni scadute e ritorna quante ne ha cancellate.
+	DeleteExpired() (int64, error)
 }
 
 func generateSessionID() (string, error) {

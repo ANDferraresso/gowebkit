@@ -7,7 +7,8 @@ import (
 
 // RawQuery esegue una query "raw" (tipicamente SELECT) con binds opzionali
 // e ritorna i risultati come []map[colName]value (string o nil), come Build().
-// binds è opzionale (0..n parametri)
+// binds è opzionale (0..n parametri). La query è passata al driver così com'è
+// (con PostgreSQL i placeholder sono $1, $2, ...).
 func RawQuery(db *sql.DB, debug bool, query string, binds ...interface{}) Res {
 	res := Res{Err: false, Msg: "", Data: []map[string]interface{}{}}
 

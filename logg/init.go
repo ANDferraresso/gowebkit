@@ -2,9 +2,10 @@
 package logg
 
 import (
-	"io"
 	"log"
+	"os"
 	"sync"
+	"time"
 )
 
 // Define log levels.
@@ -15,25 +16,30 @@ const (
 	ERROR
 )
 
+// levelNames are the file prefixes, indexed by level.
+var levelNames = [4]string{"debug", "info", "warn", "error"}
+
 // Logger represents a log object.
+//
+// Each level is written as JSON lines to its own file, <logDir>/<level>_<YYYY-MM-DD>.log,
+// and to stdout (stderr for ERROR). Files rotate automatically when the date changes.
 type Logger struct {
 	level      int
-	debugLog   *log.Logger
-	infoLog    *log.Logger
-	warnLog    *log.Logger
-	errorLog   *log.Logger
-	debugFile  io.WriteCloser
-	infoFile   io.WriteCloser
-	warnFile   io.WriteCloser
-	errorFile  io.WriteCloser
+	logDir     string
+	curDate    string // date of the files currently open (owned by the writer goroutine)
+	loggers    [4]*log.Logger
+	files      [4]*os.File
 	logChannel chan logEntry
 	wg         sync.WaitGroup
 	closeOnce  sync.Once
+	mu         sync.RWMutex // guards closed and sends on logChannel
+	closed     bool
 }
 
 // LogEntry represents a log row.
 type logEntry struct {
 	level   int
+	ts      time.Time
 	message string
 	fields  []LogField
 }
@@ -52,7 +58,8 @@ package main
 
 import (
 	"time"
-	"logg" // Assicurati che il modulo si chiami "logg" oppure usa il corretto path d'import
+
+	"github.com/ANDferraresso/gowebkit/logg"
 )
 
 func main() {
@@ -61,7 +68,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer logger.Close() // Assicurati di chiudere alla fine per svuotare il buffer
+	defer logger.Close() // Chiude e svuota il buffer: i messaggi in coda vengono scritti
 
 	start := time.Now()
 
@@ -74,9 +81,6 @@ func main() {
 	// Logging con time.Duration
 	elapsed := time.Since(start)
 	logger.Info("Processo completato", logg.Field("durata", elapsed))
-
-	// Attendi per assicurarti che i log vengano scritti prima di uscire (utile solo per demo/test)
-	time.Sleep(500 * time.Millisecond)
 }
 
 */
